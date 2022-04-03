@@ -1,0 +1,312 @@
+---
+title: "LEMBAR JAWABAN UTS DATA ANALYSIS SEMESTER GANJIL 2020/2021"
+
+Nama       : Alexander Bryan Wiratman
+NIM        : 00000036371
+NAMA DOSEN : Ir. Raymond S Oetama, MCIS
+KELAS      : B
+
+author: "Alexander Bryan Wiratman 00000036371"
+output: html_document
+---
+
+Ketentuan/Petunjuk Ujian:
+1.	Baca soal secara keseluruhan dengan teliti 
+2.	Gunakan file RMD yang sudah disediakan oleh Dosen di elearning.
+3.	Kumpulkan file jawaban dengan nama IS388_UTS2021_Nama_NIM.rmd 
+4.	Kumpulkan di elearning ditempat yang sudah disediakan oleh Dosen.
+5.	Setiap mahasiswa mengumpulkan sendiri-sendiri sesuai jadwal UTS.
+
+*****************************************************************************************
+Soal Clustering
+*****************************************************************************************
+
+1. Clustering SUB-CPMK-1, SUB-CPMK-2, SUB-CPMK-3 Bobot 50%.
+Diberikan data keyword dari sosial media remaja usia 14 sampai dengan 20 tahun. Variabel
+friend memuat informasi banyaknya teman dalam media sosial tersebut. Variabel basketball
+sampai dengan variabel drugs memuat frekuensi kata tersebut muncul dalam profil pengguna,
+menunjukkan minat pengguna.
+
+a. Bacalah data dari file IS388LabUTS.xlsx sheet socialmedia dan simpan sebagai obyek
+dataframe. Tampilkan struktur data dan beberapa baris pertama data. Bobot 5%.
+```{R}
+library(readxl)
+exceldata <- read.csv("IS388UTSLabData.csv")
+dfdata <- data.frame(exceldata)
+str(dfdata)
+head(dfdata)
+```
+
+
+b. Gunakan 6 digit terakhir NIM anda sebagai seed untuk memilih 1000 baris data. Bobot 5%.
+```{R}
+NIM <- 36371
+set.seed(NIM)
+dat <- dfdata[1:1000,]
+```
+
+c. Lakukan eksplorasi data dengan menghitung korelasi dan menggambarkan plot yang
+sesuai. Bobot 10%.
+
+```{R}
+#Plot umur dan jumlah friend
+plot(dat$age, dat$friends,
+     xlab = "Umur",
+     ylab = "Jumlah friend",
+     main = "Korelasi Antara Umur dan Jumlah Friend di Media Sosial",
+     sub = "Alexander Bryan Wiratman 00000036371")
+##Tidak terdapat korelasi antara umur dan jumlah friend di media sosial
+
+#Plot umur dengan beberapa contoh variabel kata
+#Plot umur dan frekuensi kata softball
+plot(dat$age, dat$softball,
+     xlab = "Umur",
+     ylab = "Frekuensi",
+     main = "Korelasi Antara Umur dan Frekuensi Kata 'Softball' di Media Sosial",
+     sub = "Alexander Bryan Wiratman 00000036371")
+##Tidak terdapat korelasi antara umur dan Frekuensi Kata 'Softball' di Media Sosial Pengguna
+
+#Plot umur dan frekuensi kata cute
+plot(dat$age, dat$cute,
+     xlab = "Umur",
+     ylab = "Frekuensi",
+     main = "Korelasi Antara Umur dan Frekuensi Kata 'Cute' di Media Sosial",
+     sub = "Alexander Bryan Wiratman 00000036371")
+##Tidak terdapat korelasi antara umur dan Frekuensi Kata 'Softball' di Media Sosial Pengguna
+
+#Plot umur dan frekuensi kata marching
+plot(dat$age, dat$marching,
+     xlab = "Umur",
+     ylab = "Frekuensi",
+     main = "Korelasi Antara Umur dan Frekuensi Kata 'Marching' di Media Sosial",
+     sub = "Alexander Bryan Wiratman 00000036371")
+##Tidak terdapat korelasi antara umur dan Frekuensi Kata 'Softball' di Media Sosial Pengguna
+
+##Jadi dapat disimpulkan tidak terdapat korelasi antara umur dengan frekuensi kata yang muncul dalam profil pengguna.
+
+```
+
+d. Gunakan teknik yang sesuai untuk mencari jumlah cluster optimal. Bobot 10%
+```{R}
+#Teknik kluster untuk frekuensi kata yang muncul dalam profil pengguna dan menunjukkan minat pengguna.
+###Elbow Plot
+    tot_withinss <- purrr::map_dbl(1:10, function(k){
+        model <- kmeans(x = dat[,5:41], centers = k) 
+        model$tot.withinss })
+      
+    elbow_dat <- data.frame( k = 1:10, tot_withinss <- tot_withinss )  
+      
+    library(ggplot2)
+    ggplot2::ggplot(elbow_dat, aes(k, tot_withinss)) + 
+        geom_line() + 
+        geom_point(shape=21, color="black", fill="#69b3a2", size=2) + 
+        scale_x_continuous(breaks = 1:10)
+    #klaster optimum menurut elbow plot adalah 7 dengan tot.withinss di bawah 14000
+
+###Silhouette Plot
+    library(cluster)
+    avg_sil <- function(k) {
+        km.res <- kmeans(dat[,5:41], centers = k, nstart = 25)
+        ss <- silhouette(km.res$cluster, dist(dat[,1:4]))
+        mean(ss[, 3]) }
+      
+      k.values <- 2:15
+      
+      avg_sil_values <- purrr::map_dbl(k.values, avg_sil)
+      
+      plot(k.values, avg_sil_values, 
+           type = "b", pch = 19, frame = FALSE,
+           xlab = "Number of clusters K", 
+           ylab = "Average Silhouettes", ylim=c(0,1))
+      
+      factoextra::fviz_nbclust(dat[,5:41], kmeans, method = "silhouette")
+      #klaster optimum menurut silhouette plot adalah 2. 
+      
+###Gap Statistics
+    library(factoextra)
+    gap_stat <- clusGap(dat[,5:41], FUN = kmeans, nstart = 25,
+    K.max = 10, B = 50)
+    print(gap_stat, method = "firstmax")
+    fviz_gap_stat(gap_stat)
+    #klaster optimum menurut Gap Statistics adalah 3.
+    
+    
+###Berdasarkan ketiga teknik tersebut, yang diambil adalah 3 kluster yaitu untuk menunjukkan tingkat peminatan pengguna medsos, yaitu berminat, biasa saja, dan tidak berminat.
+      
+
+```
+
+e. Terapkan algoritma kmeans untuk melakukan clustering berdasarkan minat pengguna
+medsos. Bobot 10%
+
+```{R}
+final <- kmeans(dat[,5:41], 3, nstart = 25)
+names(final)
+```
+
+
+f. Buatlah visualisasi clustering berdasarkan output pada nomor e. Bobot 10%.
+
+```{R}
+print(final)
+fviz_cluster(final, data = dat[,5:41])
+library(dplyr)
+dat[,5:41] %>%
+mutate(Cluster = final$cluster) %>%
+group_by(Cluster) %>%
+summarise_all("mean")
+
+```
+
+*****************************************************************************************
+Soal Classification
+*****************************************************************************************
+
+2.	Classification SUB-CPMK-1, SUB-CPMK-2, SUB-CPMK-3 Bobot 50%.
+Diberikan data 100 mahasiswa Prodi Sistem Informasi untuk memilih peminatan dengan menggunakan beberapa kriteria yang diambil dari nilai dari skill database, analysis, dan programming.
+
+a.	Baca file datapeminatan.xlsx pada sheet1 dan simpan sebagai objek dataframe. Bobot 5%.
+```{R}
+library(readxl)
+exceldata2 <- read_xlsx("datapeminatan.xlsx", range = cell_cols(2:5))
+dfdata2 <- data.frame(exceldata2)
+dfdata2$peminatan <- as.factor(dfdata2$peminatan)
+```
+
+b.	Visualisasikan dengan boxplot kemudian bandingkan untuk setiap jenis peminatan dan jelaskan. Bobot 5%.
+```{R}
+#Boxplot Peminatan Berdasarkan Nilai Database
+boxplot(dfdata2$database~dfdata2$peminatan,
+              main = "Peminatan Berdasarkan Nilai Database",
+              sub = "Alexander Bryan Wiratman 00000036371",
+              col = c(rainbow(4)),
+              xlab = "Peminatan",
+              ylab = "Nilai Database")
+
+#Boxplot Peminatan Berdasarkan Nilai Analysis
+boxplot(dfdata2$analysis~dfdata2$peminatan,
+              main = "Peminatan Berdasarkan Nilai Analysis",
+              sub = "Alexander Bryan Wiratman 00000036371",
+              col = c(rainbow(4)),
+              xlab = "Peminatan",
+              ylab = "Nilai Analysis")
+
+#Boxplot Peminatan Berdasarkan Nilai Programming
+boxplot(dfdata2$programming~dfdata2$peminatan,
+              main = "Peminatan Berdasarkan Nilai Programming",
+              sub = "Alexander Bryan Wiratman 00000036371",
+              col = c(rainbow(4)),
+              xlab = "Peminatan",
+              ylab = "Nilai Programming")
+
+#Berdasarkan ketiga boxplot tersebut, dapat dilihat bahwa peminatan BigData dan Database lebih besar daripada peminatan ERP dan Audit berdasarkan nilai Database, Analysis, dan Programming.
+```
+
+c.	Bagi kedua file tersebut secara random menjadi dua fold menggunakan 6 digit terakhir NIM anda sebagai seed. Bobot 5%.
+```{R}
+NIM <- 36371
+set.seed(NIM)
+samp <- sample(nrow(dfdata2), 0.5 * nrow(dfdata2))
+A <- dfdata2[samp, ] 
+B <- dfdata2[-samp, ]
+```
+
+d.	Gunakan kedua fold tersebut untuk membuat 2 fold validasi secara manual untuk model decision tree rpart untuk prediksi peminatan. Hitung akurasi rata-ratanya. Bobot 10%
+```{R}
+library(rpart)
+library(rpart.plot)
+#Experiment 1
+data_rpart1 <- rpart(peminatan~., data=A)
+rpart.plot(data_rpart1, box.palette="RdBu", shadow.col="gray", nn=TRUE)
+print(data_rpart1)
+predict_rpart1 <- predict(data_rpart1,B,type="class")
+table_rpart1=table(predict_rpart1,B$peminatan)
+library(caret) 
+confusionMatrix(table_rpart1)
+
+#Experiment 2
+data_rpart2 <- rpart(peminatan~., data=B)
+rpart.plot(data_rpart2, box.palette="RdBu", shadow.col="gray", nn=TRUE)
+print(data_rpart2)
+predict_rpart2 <- predict(data_rpart2,A,type="class")
+table_rpart2=table(predict_rpart2,A$peminatan)
+library(caret) 
+confusionMatrix(table_rpart2)
+
+#Akurasi rata-rata
+# Rata-rata akurasi experiment 1= 0.46
+# Rata-rata akurasi experiment 2= 0.46
+# Rata-rata akurasi =(0.46+0.46)/2 = 0.46
+
+```
+
+e.	Gunakan kedua fold tersebut untuk membuat 2 fold validasi secara manual untuk model decision tree party untuk prediksi peminatan. Hitung akurasi rata-ratanya. Bobot 10%
+```{R}
+library("party")
+#Experiment 1
+data_party1 <- ctree(peminatan~., data=A)
+plot(data_party1, type="simple")
+print(data_party1)
+predict_party1 <- predict(data_party1,B,type="response")
+table_party1=table(predict_party1,B$peminatan)
+library(caret) 
+confusionMatrix(table_party1)
+
+#Experiment 2
+data_party2 <- ctree(peminatan~., data=B)
+plot(data_party2, type="simple")
+print(data_party2)
+predict_party2 <- predict(data_party2,A,type="response")
+table_party2=table(predict_party2,A$peminatan)
+library(caret) 
+confusionMatrix(table_party2)
+
+#Akurasi rata-rata
+# Rata-rata akurasi experiment 1= 0.38
+# Rata-rata akurasi experiment 2= 0.46
+# Rata-rata akurasi =(0.38+0.46)/2 = 0.42
+```
+
+f.	Plot model terbaik dari rpart dan party, bandingkan dan jelaskan! Bobot 5%
+```{R}
+#Model terbaik rpart
+  #Model rpart antara eksperimen 1 dan eksperimen 2 menunjukkan akurasi yang sama, sehingga model terbaik dapat menggunakan model eksperimen 1 dan eksperimen 2. Pada bagian ini model yang digunakan adalah model eksperimen 1
+data_rpart1 <- rpart(peminatan~., data=A)
+rpart.plot(data_rpart1, box.palette="RdBu", shadow.col="gray", nn=TRUE)
+
+#Model terbaik party
+  #Model party terbaik adalah model eksperimen 2 karena memiliki akurasi yang lebih tinggi
+data_party2 <- ctree(peminatan~., data=B)
+plot(data_party2)
+
+```
+
+g.	Bandingkan rule terbaik dari rpart dan party dan jelaskan! Bobot 5%
+```{R}
+#Rule rpart terbaik
+print(data_rpart1)
+#Bila database < 80.5
+  ##Bila analysis >= 76.5, masuk kelas Big Data
+  ##Sisanya bila < 76.5, masuk kelas ERP
+      ###Bila analysis < 65, masuk kelas Audit
+      ###Bila analysis > 65, masuk kelas ERP
+#Sisanya masuk kelas Database
+
+#Rule party terbaik
+print(data_party2)
+#Bila database <= 65, masuk kelas Audit dan beberapa ERP 
+#Sisanya Bila analysis <= 69, masuk kelas ERP dan beberapa Audit
+##Sisanya masuk kelas big data, beberapa Analysis dan ERP
+
+
+```
+
+h.	Bandingkan hasil akurasi rata-rata prediksi keduanya, dan tentukan model mana yang lebih baik! Bobot 5%.
+```{R}
+#Hasil akurasi rata-rata prediksi keduanya
+
+## Rata-rata akurasi rpart experimen 1= 0.46
+## Rata-rata akurasi party experimen 2= 0.46
+
+#Berdasarkan rata-rata akurasi prediksi model party dan rpart adalah sama dengan akurasi 46%, untuk menentukan model terbaik dapat dikatakan adalah model rpart eksperimen 1 karena pada leaf node terdapat 4 kelas lengkap yaitu Big Data, Audit, ERP, dan Database. sedangkan pada model party eksperimen 2 adalah pada leaf node hanya terdapat 3 kelas sehingga kurang lengkap. 
+```
